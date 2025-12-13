@@ -1,10 +1,13 @@
 package com.ezbytes.accounts.implementation;
 
 import com.ezbytes.accounts.constants.AccountsConstants;
+import com.ezbytes.accounts.dto.AccountsDto;
 import com.ezbytes.accounts.dto.CustomerDto;
 import com.ezbytes.accounts.entity.Accounts;
 import com.ezbytes.accounts.entity.Customer;
 import com.ezbytes.accounts.exception.CustomerAlreadyExistsException;
+import com.ezbytes.accounts.exception.ResourceNotFoundException;
+import com.ezbytes.accounts.mapper.AccountsMapper;
 import com.ezbytes.accounts.mapper.CustomerMapper;
 import com.ezbytes.accounts.repository.AccountsRepository;
 import com.ezbytes.accounts.repository.CustomerRepository;
@@ -40,6 +43,8 @@ public class AccountsServiceImpl implements IAccountsService {
         accountsRepository.save(createNewAccount(savedCustomer));
     }
 
+
+
     private Accounts createNewAccount(Customer customer) {
         Accounts newAccount = new Accounts();
         newAccount.setCustomerId(customer.getCustomerId());
@@ -50,6 +55,25 @@ public class AccountsServiceImpl implements IAccountsService {
         newAccount.setBranchAddress(AccountsConstants.ADDRESS);
         newAccount.setCreatedBy("Anonymous");
         return newAccount;
+    }
+
+    /**
+     * @param mobileNumber
+     * @return
+     */
+    @Override
+    public CustomerDto fetchAccount(String mobileNumber) {
+      Customer customer =  customerRepository.findByMobileNumber(mobileNumber).orElseThrow(
+        ()->new ResourceNotFoundException("Customer","mobileNumber",mobileNumber)
+        );
+
+        Accounts accounts =  accountsRepository.findByCustomerId(customer.getCustomerId()).orElseThrow(
+                ()->new ResourceNotFoundException("Account","customerId",customer.getCustomerId().toString())
+        );
+
+       CustomerDto customerDto = CustomerMapper.mapToCustomerDto(customer,new CustomerDto());
+        customerDto.setAccountsDto(AccountsMapper.mapToAccountsDto(accounts,new AccountsDto()));
+        return customerDto;
     }
 
 }
